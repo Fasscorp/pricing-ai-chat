@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Pricing AI Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      max-width: 600px;
+      margin: auto;
+    }
+    .chat {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 8px;
+      height: 400px;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      background: #f9f9f9;
+    }
+    .message {
+      margin-bottom: 10px;
+    }
+    .user {
+      text-align: right;
+      color: #1976d2;
+    }
+    .ai {
+      text-align: left;
+      color: #4caf50;
+    }
+  </style>
+</head>
+<body>
+  <h1>💬 AI Pricing Assistant</h1>
+
+  <div id="app">
+    <div class="chat">
+      <div v-for="(msg, index) in messages" :key="index" class="message" :class="msg.role">
+        <strong>{{ msg.role === 'user' ? 'You' : 'AI' }}:</strong> {{ msg.text }}
+      </div>
+    </div>
+
+    <form @submit.prevent="sendMessage">
+      <input type="text" v-model="input" placeholder="Type your message..." style="width: 80%;">
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <script src="https://unpkg.com/vue@3"></script>
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          input: '',
+          messages: []
+        };
+      },
+      methods: {
+        async sendMessage() {
+          if (!this.input.trim()) return;
+
+          // Add user message
+          this.messages.push({ role: 'user', text: this.input });
+
+          const userInput = this.input;
+          this.input = '';
+
+          // Send to backend
+          try {
+            const res = await fetch('http://localhost:3000/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: userInput })
+            });
+
+            const data = await res.json();
+            this.messages.push({ role: 'ai', text: data.reply });
+
+            this.scrollToBottom();
+
+          } catch (err) {
+            this.messages.push({ role: 'ai', text: '⚠️ Error talking to server.' });
+          }
+        },
+        scrollToBottom() {
+          this.$nextTick(() => {
+            const chat = document.querySelector('.chat');
+            chat.scrollTop = chat.scrollHeight;
+          });
+        }
+      },
+      mounted() {
+        // Auto start the conversation
+        this.sendMessage();
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
